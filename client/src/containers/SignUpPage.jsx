@@ -1,30 +1,25 @@
-import React from 'react';
+import React,{PropTypes} from 'react';
 import SignUpForm from '../components/SignUpForm.jsx';
 
 class SignUpPage extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor(props, context) {
+    super(props, context);
 
+    // set the initial component state
     this.state = {
-      errors:{},
+      errors: {},
       user: {
-        email:'',
-        name:'',
-        password:''
+        email: '',
+        name: '',
+        password: ''
       }
     };
+
     this.processForm = this.processForm.bind(this);
     this.changeUser = this.changeUser.bind(this);
   }
 
-  changeUser(event){
-    const field = event.targe.name;
-    const user = this.state.user;
-    user[field] = event.target.value;
-    this.setState({
-      user
-    });
-  }
+
 
   processForm(event){
     event.preventDefault();
@@ -34,7 +29,7 @@ class SignUpPage extends React.Component {
     const password = encodeURIComponent(this.state.user.password);
 
     const formData = `name=${name}&email=${email}&password=${password}`;
-    console.log(formData);
+    //  console.log(formData);
 
     //pravljenje AJAX requesta
     const xhr = new XMLHttpRequest();
@@ -48,7 +43,11 @@ class SignUpPage extends React.Component {
         this.setState({
           errors:{}
         });
-        console.log('Forma je validna');
+        //setujemo poruku
+        localStorage.setItem('successMessage',xhr.response.message);
+        //pravimo redirekciju
+        this.context.router.replace('/login');
+
       }else {
         //neuspeh
         const errors = xhr.response.errors ? xhr.response.errors : {};
@@ -60,6 +59,15 @@ class SignUpPage extends React.Component {
       }
     });
     xhr.send(formData);
+  }
+
+  changeUser(event){
+    const field = event.target.name;
+    const user = this.state.user;
+    user[field] = event.target.value;
+    this.setState({
+      user
+    });
   }
 
   render(){
@@ -75,4 +83,8 @@ class SignUpPage extends React.Component {
 
 
 }
+SignUpPage.contextTypes = {
+  router: PropTypes.object.isRequired
+};
+
 export default SignUpPage;

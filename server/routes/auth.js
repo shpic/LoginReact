@@ -1,5 +1,6 @@
 const express = require('express');
 const validator = require('validator');
+const passport = require('passport');
 
 const router = new express.Router();
 
@@ -71,19 +72,42 @@ function validateLoginForm(payload){
   };
 }
 
-router.post('/signup',(req,res) => {
+router.post('/signup',(req,res,next) => {
   const validationResult = validateSignUpForm(req.body);
   if(!validationResult.success){
     return res.status(400).json({
       success:false,
       message:validationResult.message,
       errors:validationResult.errors
-    })
+    });
   }
-  return res.status(200).end();
+  return passport.authenticate('local-signup',(err)=>{
+    if(err){
+      if(err.name==='MongoError' && err.code===11000){
+      //mogno code 11000 je za duplu email adresu
+      //http 409 je greska za konfikt
+      return res.status(409).json({
+        success: false,
+        message: 'Proverite formu zbog greske.',
+        errors:{
+          email: 'ovaj email vec postoji.'
+        }
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'Ne mogu da obradim formu'
+    });
+  }
+
+  return res.status(200).json({
+    success:true,
+    message: 'Uspesno ste se registrovali. Sada ste u mogucnosti da se logujete.'
+  });
+})(req,res,next);
 })
 
-router.post('/login',(req,res) => {
+router.post('/login',(req,res,next) => {
   const validationResult = validateLoginForm(req.body);
   if(!validationResult.success){
     return res.status(400).json({
@@ -92,7 +116,27 @@ router.post('/login',(req,res) => {
       errors:validationResult.errors
     })
   }
-  return res.status(200).end();
-})
+
+  return passport.authenticate('local-login',(err,token,userData)=>{
+    if(err){
+      if(err.name='IncorrectCredentialsError'){
+        return res.status(400).json({
+          success:false,
+          message: err.message
+        });
+      }
+      return res.status(400).json({
+        success:false,
+        message: 'Ne mogu da obradim formu.'
+      });
+    }
+    return res.json({
+      success:true,
+      message: 'Uspesno ste se prijavili.',
+      token,
+      user: userData
+    });
+  })(req,res,next);
+});
 
 module.exports = router;

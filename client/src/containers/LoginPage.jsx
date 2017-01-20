@@ -1,9 +1,18 @@
 import React, {PropTypes} from 'react';
+import Auth from '../modules/Auth';
 import LoginForm from '../components/LoginForm.jsx';
 
 class LoginPage extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor(props,context) {
+    super(props,context);
+
+    const storedMessage=localStorage.getItem('successMessage');
+    let successMessage='';
+
+    if(storedMessage){
+      successMessage=storedMessage;
+      localStorage.removeItem('successMessage');
+    }
 
     this.state = {
       errors:{},
@@ -37,7 +46,13 @@ class LoginPage extends React.Component {
         this.setState({
           errors:{}
         });
-        console.log('Forma je validna');
+
+        //cuvamo token
+        Auth.authenticateUser(xhr.response.token);
+        //menjamo trenutni URL na /
+
+        this.context.router.replace('/');
+
       }else {
         //neuspeh
         const errors = xhr.response.errors ? xhr.response.errors : {};
@@ -68,10 +83,15 @@ class LoginPage extends React.Component {
       onSubmit = {this.processForm}
       onChange = {this.changeUser}
       errors = {this.state.errors}
+      successMessage = {this.state.successMessage}
       user = {this.state.user}
       ></LoginForm>
     );
   }
 }
+
+LoginPage.contextTypes = {
+  router: PropTypes.object.isRequired
+};
 
 export default LoginPage;
